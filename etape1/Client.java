@@ -4,6 +4,9 @@ import java.rmi.registry.*;
 import java.net.*;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
+	private static final int RMI_REGISTRY_PORT = 50051;
+	private static final String RMI_REGISTRY_HOSTNAME = "localhost";
+	private static Server_itf server;
 
 	public Client() throws RemoteException {
 		super();
@@ -16,18 +19,46 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer
 	public static void init() {
+		try {
+			server = (Server_itf) Naming.lookup("rmi://"
+					+ RMI_REGISTRY_HOSTNAME + ":"
+					+ RMI_REGISTRY_PORT
+					+ "/server");
+		} catch (NotBoundException | MalformedURLException | RemoteException e) {
+			e.printStackTrace();
+		}
 	}
-	
+	// TODO : return a sharedObject instance
 	// lookup in the name server
 	public static SharedObject lookup(String name) {
+		try {
+			server.lookup(name);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}		
 	
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
+		try {
+			server.register(name, ((SharedObject)so).getId());
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
 	}
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
+		SharedObject sharedObject = new SharedObject();
+		sharedObject.obj = o;
+		try {
+			sharedObject.setId(server.create(o));
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		return sharedObject;
 	}
 	
 /////////////////////////////////////////////////////////////
