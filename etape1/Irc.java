@@ -25,7 +25,7 @@ public class Irc extends Frame {
 		// initialize the system
 		Client.init();
 		
-		// look up the IRC object in the name server
+		// look up the IRC object in the name serveqr
 		// if not found, create it, and register it in the name server
 		SharedObject s = Client.lookup("IRC");
 		if (s == null) {
@@ -94,9 +94,9 @@ class writeListener implements ActionListener {
 	public void actionPerformed (ActionEvent e) {
 		
 		// get the value to be written from the buffer
-        	String s = irc.data.getText();
-        	
-        	// lock the object in write mode
+		String s = irc.data.getText();
+
+		// lock the object in write mode
 		irc.sentence.lock_write();
 		
 		// invoke the method
