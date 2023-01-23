@@ -108,8 +108,8 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// callback invoked remotely by the server
 	public synchronized void invalidate_reader() {
-		thereIsWriter = true;
-		isAccessWrite = false;
+		thereIsWriter = true; // suspend reader
+		isAccessWrite = false; // suspend writer
 
 		while (lock == State.RLT) {
 			try {
@@ -138,7 +138,6 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			}
 		}
 
-		System.out.println("invalidate writer");
 
 		if( lock == State.WLC ) lock = State.NL;
 		isAccessWrite = true;
