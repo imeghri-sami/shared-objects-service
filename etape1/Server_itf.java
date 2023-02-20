@@ -4,4 +4,10 @@ public interface Server_itf extends java.rmi.Remote {
 	public int create(Object o) throws java.rmi.RemoteException;
 	public Object lock_read(int id, Client_itf client) throws java.rmi.RemoteException;
 	public Object lock_write(int id, Client_itf client) throws java.rmi.RemoteException;
+
+	void publish(int id, Client_itf writer) throws java.rmi.RemoteException;
+
+	void subscribe(int id, Client_itf client) throws java.rmi.RemoteException;
+
+	void unsubscribe(Integer id, Client_itf client) throws java.rmi.RemoteException;
 }

@@ -14,6 +14,8 @@ public class Irc extends Frame {
 	SharedObject		sentence;
 	static String		myName;
 
+	private PrintIrcCallbackImpl printIrcCallback;
+
 	public static void main(String argv[]) {
 		
 		if (argv.length != 1) {
@@ -21,7 +23,7 @@ public class Irc extends Frame {
 			return;
 		}
 		myName = argv[0];
-	
+
 		// initialize the system
 		Client.init();
 		
@@ -34,6 +36,8 @@ public class Irc extends Frame {
 		}
 		// create the graphical part
 		new Irc(s);
+
+
 	}
 
 	public Irc(SharedObject s) {
@@ -54,12 +58,47 @@ public class Irc extends Frame {
 		Button read_button = new Button("read");
 		read_button.addActionListener(new readListener(this));
 		add(read_button);
-		
+		Button sub_button = new Button("subscribe");
+		sub_button.addActionListener(new SubListener(this));
+		add(sub_button);
+
+		Button unsub_button = new Button("unsubscribe");
+		unsub_button.addActionListener(new UnsubListener(this));
+		add(unsub_button);
+
 		setSize(470,300);
 		text.setBackground(Color.black); 
 		show();
 		
 		sentence = s;
+
+		printIrcCallback = new PrintIrcCallbackImpl(text);
+		Client.setCallbackObject(printIrcCallback);
+	}
+
+	private class SubListener implements ActionListener {
+		public SubListener(Irc irc) {
+
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			Client.subscribe(sentence.getId());
+		}
+	}
+
+	private class UnsubListener implements ActionListener {
+		public UnsubListener(Irc irc) {
+		}
+
+		public void actionPerformed (ActionEvent e) {
+
+			try {
+				Client.unsubscribe(sentence.getId());
+			} catch (RemoteException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
 	}
 }
 

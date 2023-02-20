@@ -13,6 +13,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	private static Client thisClient;
 
+	private static Callback_itf callbackObject;
+
+	@Override
+	public void callback(Object o) throws RemoteException{
+		if ( callbackObject == null ) return;
+		callbackObject.callback(o);
+	}
+
 	public Client() throws RemoteException {
 		super();
 	}
@@ -34,6 +42,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		} catch (NotBoundException | MalformedURLException | RemoteException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void setCallbackObject(Callback_itf callbackObject){
+		Client.callbackObject = callbackObject;
 	}
 
 	// lookup in the name server
@@ -99,7 +111,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		}
 	}
 
-	// request a write lock from the server
+	// request a writing lock from the server
 	public static Object lock_write (int id) {
 		try {
 			return server.lock_write(id, thisClient);
@@ -114,6 +126,14 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				.stream()
 				.filter(e -> e.getId() == id)
 				.findFirst().get().reduce_lock();
+	}
+
+	@Override
+	public Object getUpdatedObject(int id) throws java.rmi.RemoteException {
+		return sharedObjects
+				.stream()
+				.filter(e -> e.getId() == id)
+				.findFirst().get().getObject();
 	}
 
 
@@ -133,4 +153,23 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				.filter(e -> e.getId() == id)
 				.findFirst().get().invalidate_writer();
 	}
+
+	public static void publish(int id) throws RemoteException {
+		System.out.println("Object published ...");
+		server.publish(id, thisClient);
+	}
+
+	public static void subscribe(int id) {
+		try {
+			server.subscribe(id, thisClient);
+		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	public static void unsubscribe(Integer id) throws RemoteException {
+		server.unsubscribe(id, thisClient);
+	}
+
 }

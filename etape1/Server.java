@@ -1,5 +1,4 @@
 import java.net.MalformedURLException;
-import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -15,6 +14,8 @@ public class Server extends UnicastRemoteObject implements Server_itf {
     private Map<Integer, ServerObject> serverObjects;
     private Map<String, Integer> bindingMap;
     private AtomicInteger atomicInteger;
+
+    private Map<Integer, List<Client_itf>> subs;
 
 
     public static void main(String[] args) {
@@ -33,6 +34,7 @@ public class Server extends UnicastRemoteObject implements Server_itf {
         atomicInteger = new AtomicInteger();
         serverObjects = new HashMap<>();
         bindingMap = new HashMap<>();
+        subs = new HashMap<>();
     }
 
     @Override
@@ -74,5 +76,50 @@ public class Server extends UnicastRemoteObject implements Server_itf {
         ServerObject serverObject = serverObjects.get(id);
         serverObject.lock_write(id, client);
         return serverObject.getObj();
+    }
+
+    //Notify all the subs by calling their callback
+    @Override
+    public void publish(int id, Client_itf writer) throws RemoteException{
+
+
+        if ( subs.isEmpty() ) {
+            System.out.println("no subscriber found, the map is empty");
+            return;
+        }
+
+        Optional.of(subs.get(id))
+                .orElse(Collections.emptyList())
+                .forEach(c -> {
+            try {
+                if (serverObjects.get(id).getObj() == null ) {
+                    System.out.println("Null object !");
+                }
+                // retrieve the modified shared object from the Client
+                // Execute the callback method of each client
+                c.callback(writer.getUpdatedObject(id));
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public void subscribe(int id, Client_itf client) throws java.rmi.RemoteException{
+
+        if( subs.containsKey(id) ) subs.get(id).add(client);
+        // add a new subscriber for a new shared object
+        else {
+            List<Client_itf> newSubs = new ArrayList<>();
+            newSubs.add(client);
+            subs.put(id, newSubs);
+        }
+        System.out.println("Subscribed !");
+    }
+
+    @Override
+    public void unsubscribe(Integer id, Client_itf thisClient) throws RemoteException {
+        if( subs.containsKey(id) ) subs.get(id).remove(thisClient);
+        System.out.println("Unsubscribed !");
     }
 }

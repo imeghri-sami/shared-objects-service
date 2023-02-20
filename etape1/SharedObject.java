@@ -1,4 +1,5 @@
 import java.io.*;
+import java.rmi.RemoteException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -79,8 +80,18 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 	// invoked by the user program on the client node
 	public synchronized void unlock() {
+		// call the server method to notify subs
+		if ( lock == State.WLT){
+			try {
+				Client.publish(id);
+			} catch (RemoteException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 		if ( lock == State.RLT) lock = State.RLC;
 		else if ( lock == State.WLT || lock == State.RLT_WLC) lock = State.WLC;
+
 		notify();
 	}
 
@@ -103,6 +114,11 @@ public class SharedObject implements Serializable, SharedObject_itf {
 
 		isAccessWrite = true;
 		notify();
+		return obj;
+	}
+
+	@Override
+	public Object getObject() {
 		return obj;
 	}
 
