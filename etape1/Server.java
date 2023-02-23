@@ -107,7 +107,15 @@ public class Server extends UnicastRemoteObject implements Server_itf {
     @Override
     public void subscribe(int id, Client_itf client) throws java.rmi.RemoteException{
 
-        if( subs.containsKey(id) ) subs.get(id).add(client);
+        if( subs.containsKey(id) ) {
+            List<Client_itf> subscribedClients = subs.get(id);
+
+            if( subscribedClients.contains(client)) {
+                System.out.println("Client is already subscribed !");
+                return;
+            }
+            subscribedClients.add(client);
+        }
         // add a new subscriber for a new shared object
         else {
             List<Client_itf> newSubs = new ArrayList<>();
