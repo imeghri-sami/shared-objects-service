@@ -88,20 +88,26 @@ public class Server extends UnicastRemoteObject implements Server_itf {
             return;
         }
 
-        Optional.of(subs.get(id))
-                .orElse(Collections.emptyList())
-                .forEach(c -> {
-            try {
-                if (serverObjects.get(id).getObj() == null ) {
-                    System.out.println("Null object !");
+        List<Client_itf> clients = Optional.of(subs.get(id))
+                .orElse(Collections.emptyList());
+
+        new Thread(() -> {
+            System.out.println("Thread started ...");
+            clients.forEach(c -> {
+                try {
+                    if (serverObjects.get(id).getObj() == null ) {
+                        System.out.println("Null object !");
+                    }
+                    // retrieve the modified shared object from the Client
+                    // Execute the callback method of each client
+                    c.callback(writer.getUpdatedObject(id));
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
                 }
-                // retrieve the modified shared object from the Client
-                // Execute the callback method of each client
-                c.callback(writer.getUpdatedObject(id));
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
+            });
+            System.out.println("Thread killed !");
+        }).start();
+
     }
 
     @Override
