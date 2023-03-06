@@ -123,7 +123,7 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	}
 
 	// callback invoked remotely by the server
-	public synchronized void invalidate_reader() {
+	public synchronized void invalidate_reader(boolean isSubscribed) {
 		thereIsWriter = true; // suspend reader
 		isAccessWrite = false; // suspend writer
 
@@ -135,13 +135,13 @@ public class SharedObject implements Serializable, SharedObject_itf {
 			}
 		}
 
-		if( lock == State.RLC ) lock = State.NL;
+		if( !isSubscribed && lock == State.RLC ) lock = State.NL;
 		thereIsWriter = false;
 		isAccessWrite = true;
 		notify();
 	}
 
-	public synchronized Object invalidate_writer() {
+	public synchronized Object invalidate_writer(boolean isSubscribed) {
 
 		isAccessWrite = false;
 
@@ -155,7 +155,9 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		}
 
 
-		if( lock == State.WLC ) lock = State.NL;
+		if(isSubscribed && lock == State.WLC ) lock = State.RLC;
+		else if ( lock == State.WLC ) lock = State.NL;
+
 		isAccessWrite = true;
 		notify();
 		return obj;

@@ -17,6 +17,11 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     private Map<Integer, List<Client_itf>> subs;
 
+    private static int nbReadInteraction = 0;
+    private static int nbWriteInteraction = 0;
+
+    private static int nbServerCalls = 0;
+
 
     public static void main(String[] args) {
 
@@ -25,6 +30,7 @@ public class Server extends UnicastRemoteObject implements Server_itf {
             LocateRegistry.createRegistry(RMI_REGISTRY_PORT);
             Naming.rebind("rmi://" + RMI_REGISTRY_HOSTNAME + ":" + RMI_REGISTRY_PORT + "/server", server);
             System.out.println("RMI registry started");
+
         } catch (RemoteException | MalformedURLException e) {
             e.printStackTrace();
         }
@@ -39,12 +45,16 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public int lookup(String name) throws RemoteException {
+        nbServerCalls++;
+        System.out.println("Lookup : " + nbServerCalls);
         Integer id = bindingMap.get(name);
         return id == null ? -1 : id;
     }
 
     @Override
     public void register(String name, int id) throws RemoteException {
+        nbServerCalls++;
+        System.out.println("Register : " + nbServerCalls);
         if ( !serverObjects.containsKey(id) )
             throw new IllegalArgumentException(
                     String.format("No server object found with the id : %d ", id)
@@ -56,6 +66,7 @@ public class Server extends UnicastRemoteObject implements Server_itf {
         bindingMap.put(name, id);
     }
 
+
     @Override
     public int create(Object o) throws RemoteException {
         int id = atomicInteger.incrementAndGet();
@@ -66,6 +77,8 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public Object lock_read(int id, Client_itf client) throws RemoteException {
+        nbServerCalls++;
+        System.out.println("Nombre des interactions (read) : " + nbServerCalls);
         ServerObject serverObject = serverObjects.get(id);
         serverObject.lock_read(id, client);
         return serverObject.getObj();
@@ -73,6 +86,8 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public Object lock_write(int id, Client_itf client) throws RemoteException {
+        nbServerCalls++;
+        System.out.println("Nombre des interactions (write) : " + nbServerCalls);
         ServerObject serverObject = serverObjects.get(id);
         serverObject.lock_write(id, client);
         return serverObject.getObj();
@@ -80,9 +95,9 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     //Notify all the subs by calling their callback
     @Override
-    public void publish(int id, Client_itf writer) throws RemoteException{
-
-
+    public void publish(int id, Object o, Client_itf writer) throws RemoteException{
+        nbServerCalls++;
+        System.out.println("Nombre des interactions (write) : " + nbServerCalls);
         if ( subs.isEmpty() ) {
             System.out.println("no subscriber found, the map is empty");
             return;
@@ -100,7 +115,7 @@ public class Server extends UnicastRemoteObject implements Server_itf {
                     }
                     // retrieve the modified shared object from the Client
                     // Execute the callback method of each client
-                    c.callback(writer.getUpdatedObject(id));
+                    c.callback(o);
                 } catch (RemoteException e) {
                     throw new RuntimeException(e);
                 }
@@ -112,7 +127,8 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public void subscribe(int id, Client_itf client) throws java.rmi.RemoteException{
-
+        nbServerCalls++;
+        System.out.println("Subscribe : " + nbServerCalls);
         if( subs.containsKey(id) ) {
             List<Client_itf> subscribedClients = subs.get(id);
 
@@ -128,12 +144,17 @@ public class Server extends UnicastRemoteObject implements Server_itf {
             newSubs.add(client);
             subs.put(id, newSubs);
         }
+
+        serverObjects.get(id).addSubscriber(client);
         System.out.println("Subscribed !");
     }
 
     @Override
-    public void unsubscribe(Integer id, Client_itf thisClient) throws RemoteException {
-        if( subs.containsKey(id) ) subs.get(id).remove(thisClient);
+    public void unsubscribe(Integer id, Client_itf client) throws RemoteException {
+        nbServerCalls++;
+        System.out.println("Unsubscribe : " + nbServerCalls);
+        if( subs.containsKey(id) ) subs.get(id).remove(client);
+        serverObjects.get(id).removeSubscriber(client);
         System.out.println("Unsubscribed !");
     }
 }

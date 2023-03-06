@@ -2,6 +2,9 @@
 rapport/
 .idea/
 *.iml
+*.pdf
+*.mkv
+*.tar
 ### Java template
 # Compiled class file
 *.class

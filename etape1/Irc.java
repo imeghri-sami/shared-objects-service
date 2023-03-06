@@ -9,6 +9,7 @@ public class Irc extends Frame {
 	public TextField	data;
 	SharedObject		sentence;
 	static String		myName;
+	boolean isTracked = false;
 
 	private PrintIrcCallbackImpl printIrcCallback;
 
@@ -62,6 +63,14 @@ public class Irc extends Frame {
 		unsub_button.addActionListener(new UnsubListener(this));
 		add(unsub_button);
 
+		Button track_button = new Button("track");
+		sub_button.addActionListener(new TrackListener(this));
+		//add(track_button);
+
+		Button leave_track_button = new Button("leave track");
+		sub_button.addActionListener(new LeaveTrackListener(this));
+		//add(leave_track_button);
+
 		setSize(470,300);
 		text.setBackground(Color.black); 
 		show();
@@ -69,7 +78,9 @@ public class Irc extends Frame {
 		sentence = s;
 
 		printIrcCallback = new PrintIrcCallbackImpl(text);
+		printIrcCallback.setSharedObject(sentence);
 		Client.setCallbackObject(printIrcCallback);
+		//Client.initCallbacks(printIrcCallback, new NotifyIrcCallbackImpl(text));
 	}
 
 	private class SubListener implements ActionListener {
@@ -98,6 +109,26 @@ public class Irc extends Frame {
 			}
 		}
 	}
+
+	private class TrackListener implements ActionListener {
+		public TrackListener(Irc irc) {
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			//Client.track();
+		}
+	}
+
+	private class LeaveTrackListener implements ActionListener {
+		public LeaveTrackListener(Irc irc) {
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			//Client.leave_track();
+		}
+	}
 }
 
 
@@ -111,7 +142,13 @@ class readListener implements ActionListener {
 		
 		// lock the object in read mode
 		irc.sentence.lock_read();
-		
+
+		/*try {
+			System.out.println("Taking time to read ...");
+			Thread.sleep(5 * 1000);
+		} catch (InterruptedException ex) {
+			throw new RuntimeException(ex);
+		}*/
 		// invoke the method
 		String s = ((Sentence)(irc.sentence.obj)).read();
 		

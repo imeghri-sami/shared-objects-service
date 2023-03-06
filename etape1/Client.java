@@ -15,6 +15,12 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	private static Callback_itf callbackObject;
 
+	private static Callback_itf trackCallback;
+
+	private static Callback_itf notifyCallback;
+
+	private boolean isTracked = false;
+
 	@Override
 	public void callback(Object o) throws RemoteException{
 		if ( callbackObject == null ) return;
@@ -46,6 +52,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	public static void setCallbackObject(Callback_itf callbackObject){
 		Client.callbackObject = callbackObject;
+	}
+	public static void initCallbacks(Callback_itf tcb, Callback_itf notifcb){
+		trackCallback = tcb;
+		notifyCallback = notifcb;
 	}
 
 	// lookup in the name server
@@ -138,25 +148,29 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 
 	// receive a reader invalidation request from the server
-	public void invalidate_reader(int id) throws java.rmi.RemoteException {
+	public void invalidate_reader(int id, boolean isSubscribed) throws java.rmi.RemoteException {
 		sharedObjects
 				.stream()
 				.filter(e -> e.getId() == id)
-				.findFirst().get().invalidate_reader();
+				.findFirst().get().invalidate_reader(isSubscribed);
 	}
 
 
 	// receive a writer invalidation request from the server
-	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
+	public Object invalidate_writer(int id, boolean isSubscribed) throws java.rmi.RemoteException {
 		return sharedObjects
 				.stream()
 				.filter(e -> e.getId() == id)
-				.findFirst().get().invalidate_writer();
+				.findFirst().get().invalidate_writer(isSubscribed);
 	}
 
 	public static void publish(int id) throws RemoteException {
 		System.out.println("Object published ...");
-		server.publish(id, thisClient);
+		Object o = null;
+		for ( SharedObject so : sharedObjects) {
+			if( so.getId() == id ) o = so.getObj();
+		}
+		server.publish(id, o, thisClient);
 	}
 
 	public static void subscribe(int id) {
@@ -169,7 +183,15 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	public static void unsubscribe(Integer id) throws RemoteException {
+		callbackObject = null;
 		server.unsubscribe(id, thisClient);
 	}
 
+	public void track() {
+		isTracked = true;
+	}
+
+	public void leave_track(){
+		isTracked = false;
+	}
 }

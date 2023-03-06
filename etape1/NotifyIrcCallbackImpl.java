@@ -9,6 +9,6 @@ public class NotifyIrcCallbackImpl implements Callback_itf{
 
     @Override
     public void callback(Object o) {
-        textArea.append("An object has been modified ...");
+        textArea.append("An object has been modified ...\n");
     }
 }

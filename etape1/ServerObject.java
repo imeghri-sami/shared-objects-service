@@ -1,6 +1,7 @@
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 public class ServerObject implements ServerObject_itf{
     enum State {READ, WRITE, FREE}
@@ -10,6 +11,12 @@ public class ServerObject implements ServerObject_itf{
     private Object obj;
 
     private Integer id;
+
+
+    public Integer getId() {
+        return id;
+    }
+
 
     public ServerObject (Object o, int id){
         this.lock = State.FREE;
@@ -34,7 +41,7 @@ public class ServerObject implements ServerObject_itf{
                 obj = writer.reduce_lock(id);
                 readers.add(writer);
             }
-            else if (writer != null) writer.invalidate_writer(id);
+            else if (writer != null) writer.invalidate_writer(id, subs.contains(writer));
 
             readers.add(client);
             lock = State.READ;
@@ -51,7 +58,8 @@ public class ServerObject implements ServerObject_itf{
             readers.remove(client);
             for ( Client_itf reader : readers) {
                 try {
-                    reader.invalidate_reader(id);
+                    // Check if the reader is subscribed
+                    reader.invalidate_reader(id, subs.contains(reader));
                 } catch (RemoteException e) {
                     throw new RuntimeException(e);
                 }
@@ -60,7 +68,7 @@ public class ServerObject implements ServerObject_itf{
 
         if (lock == State.WRITE) {
             try {
-                obj = writer.invalidate_writer(id);
+                obj = writer.invalidate_writer(id, subs.contains(writer));
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -71,5 +79,16 @@ public class ServerObject implements ServerObject_itf{
         lock = State.WRITE;
 
         return null;
+    }
+
+    private List<Client_itf> subs = new Vector<>();
+    @Override
+    public void addSubscriber(Client_itf sub) {
+        subs.add(sub);
+    }
+
+    @Override
+    public void removeSubscriber(Client_itf sub) {
+        subs.remove(sub);
     }
 }
